@@ -14,7 +14,8 @@ export const RawMaterialCard = ({ item }: Props) => {
   return (
     <Link to={`/product/${item.id}`} className="block group">
       <Card className="h-full flex flex-col !p-0 overflow-hidden">
-        <div className="relative aspect-[4/3] overflow-hidden bg-cream">
+        {/* Изображение */}
+        <div className="relative aspect-[16/10] sm:aspect-[4/3] overflow-hidden bg-cream">
           {item.imageUrl ? (
             <img
               src={item.imageUrl}
@@ -32,7 +33,8 @@ export const RawMaterialCard = ({ item }: Props) => {
           </div>
         </div>
 
-        <div className="flex flex-col flex-1 p-5">
+        {/* Контент */}
+        <div className="flex flex-col flex-1 p-4 sm:p-5">
           <h3 className="font-bold text-base text-dark tracking-tight mb-1.5 line-clamp-1">
             {item.title}
           </h3>
@@ -53,11 +55,9 @@ export const RawMaterialCard = ({ item }: Props) => {
           </div>
 
           <div className="pt-4 border-t border-line flex items-baseline justify-between gap-2">
-            <div>
-              <span className="text-lg font-extrabold text-dark tracking-tight">
-                {formatPricePer(item.pricePerTon, 'т')}
-              </span>
-            </div>
+            <span className="text-lg font-extrabold text-dark tracking-tight">
+              {formatPricePer(item.pricePerTon, 'т')}
+            </span>
             <span className="text-xs text-muted truncate max-w-[45%] text-right">
               {item.sellerName}
             </span>

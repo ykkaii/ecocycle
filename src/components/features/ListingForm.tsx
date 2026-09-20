@@ -230,7 +230,9 @@ export const ListingForm = ({ mode, initialKind = 'raw', initialData }: Props) =
               required
             />
             <div>
-              <label className="block text-sm font-medium text-dark mb-1.5">Тип сырья</label>
+              <label className="block text-sm font-medium text-dark mb-1.5">
+                Тип сырья
+              </label>
               <select
                 className={selectClasses}
                 value={form.type}
@@ -261,7 +263,9 @@ export const ListingForm = ({ mode, initialKind = 'raw', initialData }: Props) =
               required
             />
             <div>
-              <label className="block text-sm font-medium text-dark mb-1.5">Категория</label>
+              <label className="block text-sm font-medium text-dark mb-1.5">
+                Категория
+              </label>
               <select
                 className={selectClasses}
                 value={form.category}

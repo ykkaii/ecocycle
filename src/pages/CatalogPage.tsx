@@ -46,7 +46,6 @@ export const CatalogPage = ({ kind }: Props) => {
     load();
   }, [kind]);
 
-  // Сбрасываем страницу при изменении фильтров
   useEffect(() => {
     setPage(1);
   }, [filters]);
@@ -92,21 +91,21 @@ export const CatalogPage = ({ kind }: Props) => {
   const productPage = filteredProducts.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE);
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-8">
-      <h1 className="text-3xl font-extrabold text-dark mb-6 tracking-tight">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 md:py-8">
+      <h1 className="text-2xl sm:text-3xl font-extrabold text-dark mb-5 md:mb-6 tracking-tight">
         {kind === 'raw' ? 'Каталог сырья' : 'Каталог продукции'}
       </h1>
 
       <FilterBar kind={kind} filters={filters} setFilters={setFilters} />
 
       {loading && (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
           {Array.from({ length: 8 }).map((_, i) => (
             <div
               key={i}
               className="bg-surface border border-line rounded-card overflow-hidden animate-pulse"
             >
-              <div className="aspect-[4/3] bg-cream" />
+              <div className="aspect-[16/10] sm:aspect-[4/3] bg-cream" />
               <div className="p-5 space-y-3">
                 <div className="h-4 bg-cream rounded w-3/4" />
                 <div className="h-3 bg-cream rounded w-full" />
@@ -124,7 +123,7 @@ export const CatalogPage = ({ kind }: Props) => {
       )}
 
       {!loading && !error && kind === 'raw' && (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
           {rawPage.map((item) => (
             <RawMaterialCard key={item.id} item={item} />
           ))}
@@ -132,7 +131,7 @@ export const CatalogPage = ({ kind }: Props) => {
       )}
 
       {!loading && !error && kind === 'product' && (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
           {productPage.map((item) => (
             <ProductCard key={item.id} item={item} />
           ))}
@@ -154,7 +153,6 @@ export const CatalogPage = ({ kind }: Props) => {
   );
 };
 
-// Хелпер сортировки
 function sortItems<T extends Record<string, any>>(
   items: T[],
   sort: Filters['sort'],

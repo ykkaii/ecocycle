@@ -35,7 +35,7 @@ export const EditListingPage = () => {
 
   if (authLoading || loading) {
     return (
-      <div className="max-w-2xl mx-auto px-6 py-16 text-center text-muted">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-16 text-center text-muted">
         Загрузка...
       </div>
     );
@@ -48,8 +48,8 @@ export const EditListingPage = () => {
 
   if (error || !data) {
     return (
-      <div className="max-w-2xl mx-auto px-6 py-16 text-center">
-        <h1 className="text-3xl font-extrabold text-dark mb-4 tracking-tight">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-16 text-center">
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-dark mb-4 tracking-tight">
           Объявление не найдено
         </h1>
         <Link to="/profile">
@@ -59,12 +59,11 @@ export const EditListingPage = () => {
     );
   }
 
-  // Проверка прав: редактировать может только владелец
   const ownerId = 'type' in data ? data.sellerId : data.manufacturerId;
   if (ownerId !== user.id) {
     return (
-      <div className="max-w-2xl mx-auto px-6 py-16 text-center">
-        <h1 className="text-3xl font-extrabold text-dark mb-4 tracking-tight">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-16 text-center">
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-dark mb-4 tracking-tight">
           Нет доступа
         </h1>
         <p className="text-text mb-8">Вы можете редактировать только свои объявления.</p>
@@ -76,8 +75,8 @@ export const EditListingPage = () => {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-6 py-8">
-      <h1 className="text-3xl font-extrabold text-dark mb-6 tracking-tight">
+    <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 md:py-8">
+      <h1 className="text-2xl sm:text-3xl font-extrabold text-dark mb-5 md:mb-6 tracking-tight">
         Редактирование объявления
       </h1>
       <ListingForm mode="edit" initialData={data} />

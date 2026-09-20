@@ -1,7 +1,7 @@
 export const Footer = () => {
   return (
-    <footer className="bg-dark text-white mt-24">
-      <div className="max-w-7xl mx-auto px-6 py-16 grid md:grid-cols-3 gap-12">
+    <footer className="bg-dark text-white mt-16 md:mt-24">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 md:py-16 grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
         <div>
           <h3 className="text-lg font-extrabold mb-3 text-white tracking-tight">
             ЭкоЦикл
@@ -31,7 +31,7 @@ export const Footer = () => {
           </p>
         </div>
       </div>
-      <div className="border-t border-white/10 py-6 text-center text-xs text-white/40">
+      <div className="border-t border-white/10 py-6 text-center text-xs text-white/40 px-4">
         © 2026 ЭкоЦикл. MVP-версия.
       </div>
     </footer>

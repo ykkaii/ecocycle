@@ -22,9 +22,9 @@ export const FilterBar = ({ kind, filters, setFilters }: Props) => {
     'w-full px-4 py-2.5 rounded-btn border border-line bg-white text-dark text-sm focus:border-sage focus:ring-2 focus:ring-sage/20 outline-none transition-all cursor-pointer';
 
   return (
-    <div className="bg-surface border border-line rounded-card p-4 mb-8 space-y-3">
+    <div className="bg-surface border border-line rounded-card p-3 sm:p-4 mb-6 md:mb-8 space-y-3">
       {/* Строка 1: поиск + регион + сортировка */}
-      <div className="grid md:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 md:gap-3">
         <Input
           placeholder="Поиск по названию..."
           value={filters.search}
@@ -50,7 +50,7 @@ export const FilterBar = ({ kind, filters, setFilters }: Props) => {
       </div>
 
       {/* Строка 2: тип/категория + цена от/до */}
-      <div className="grid md:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 md:gap-3">
         {kind === 'raw' && (
           <select
             className={selectClasses}

@@ -8,10 +8,6 @@ import { fetchRawMaterialById, fetchProductById } from '../lib/api';
 import { formatPricePer, formatVolume, formatMonths, formatPrice } from '../utils/format';
 import type { RawMaterial, Product } from '../types';
 
-/**
- * Открывает почтовый клиент с готовым письмом продавцу.
- * Если email не указан — показывает сообщение.
- */
 const contactSeller = (email: string | null | undefined, subject: string) => {
   if (!email) {
     alert(
@@ -67,7 +63,7 @@ export const ProductPage = () => {
 
   if (loading) {
     return (
-      <div className="max-w-7xl mx-auto px-6 py-16 text-center text-muted">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-16 text-center text-muted">
         Загрузка...
       </div>
     );
@@ -75,8 +71,8 @@ export const ProductPage = () => {
 
   if (notFound) {
     return (
-      <div className="max-w-7xl mx-auto px-6 py-24 text-center">
-        <h1 className="text-3xl font-extrabold text-dark mb-4 tracking-tight">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-24 text-center">
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-dark mb-4 tracking-tight">
           Товар не найден
         </h1>
         <p className="text-text mb-8">
@@ -92,16 +88,16 @@ export const ProductPage = () => {
   /* ---------- Ветка: сырьё ---------- */
   if (rawItem) {
     return (
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 md:py-8">
         <Link
           to="/catalog/raw"
-          className="inline-flex items-center text-sm text-muted hover:text-sage transition-colors mb-8"
+          className="inline-flex items-center text-sm text-muted hover:text-sage transition-colors mb-6 md:mb-8"
         >
           <ArrowLeft className="w-4 h-4 mr-2" strokeWidth={2} />
           Назад в каталог сырья
         </Link>
 
-        <div className="grid md:grid-cols-2 gap-12 lg:gap-16 items-start">
+        <div className="grid md:grid-cols-2 gap-8 md:gap-12 lg:gap-16 items-start">
           <div className="bg-cream rounded-card overflow-hidden border border-line">
             <img
               src={rawItem.imageUrl || 'https://placehold.co/800x600/E8F0E3/7CA982?text=ЭкоЦикл'}
@@ -113,15 +109,15 @@ export const ProductPage = () => {
           <div>
             <Badge variant="sage">Сырьё</Badge>
 
-            <h1 className="text-4xl md:text-5xl font-extrabold text-dark tracking-tightest leading-tight mt-4 mb-5">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-dark tracking-tightest leading-tight mt-4 mb-4 md:mb-5">
               {rawItem.title}
             </h1>
 
-            <p className="text-lg text-text leading-relaxed mb-8">
+            <p className="text-base sm:text-lg text-text leading-relaxed mb-6 md:mb-8">
               {rawItem.description}
             </p>
 
-            <div className="space-y-3 mb-8 pb-8 border-b border-line">
+            <div className="space-y-3 mb-6 md:mb-8 pb-6 md:pb-8 border-b border-line">
               <div className="flex items-center gap-2.5 text-sm text-text">
                 <MapPin className="w-4 h-4 text-olive" strokeWidth={2} />
                 {rawItem.location}
@@ -133,7 +129,7 @@ export const ProductPage = () => {
             </div>
 
             <Card hover={false} className="bg-cream border-0">
-              <div className="text-4xl font-extrabold text-dark tracking-tightest mb-2">
+              <div className="text-3xl sm:text-4xl font-extrabold text-dark tracking-tightest mb-2">
                 {formatPricePer(rawItem.pricePerTon, 'т')}
               </div>
               <p className="text-sm text-muted mb-6">
@@ -158,16 +154,16 @@ export const ProductPage = () => {
   if (!productItem) return null;
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 md:py-8">
       <Link
         to="/catalog/products"
-        className="inline-flex items-center text-sm text-muted hover:text-sage transition-colors mb-8"
+        className="inline-flex items-center text-sm text-muted hover:text-sage transition-colors mb-6 md:mb-8"
       >
         <ArrowLeft className="w-4 h-4 mr-2" strokeWidth={2} />
         Назад в каталог продукции
       </Link>
 
-      <div className="grid md:grid-cols-2 gap-12 lg:gap-16 items-start">
+      <div className="grid md:grid-cols-2 gap-8 md:gap-12 lg:gap-16 items-start">
         <div className="bg-cream rounded-card overflow-hidden border border-line">
           <img
             src={productItem.imageUrl || 'https://placehold.co/800x600/E8F0E3/7CA982?text=ЭкоЦикл'}
@@ -179,15 +175,15 @@ export const ProductPage = () => {
         <div>
           <Badge variant="olive">Продукция</Badge>
 
-          <h1 className="text-4xl md:text-5xl font-extrabold text-dark tracking-tightest leading-tight mt-4 mb-5">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-dark tracking-tightest leading-tight mt-4 mb-4 md:mb-5">
             {productItem.title}
           </h1>
 
-          <p className="text-lg text-text leading-relaxed mb-8">
+          <p className="text-base sm:text-lg text-text leading-relaxed mb-6 md:mb-8">
             {productItem.description}
           </p>
 
-          <div className="space-y-3 mb-8 pb-8 border-b border-line">
+          <div className="space-y-3 mb-6 md:mb-8 pb-6 md:pb-8 border-b border-line">
             <div className="flex items-center gap-2.5 text-sm text-text">
               <Calendar className="w-4 h-4 text-olive" strokeWidth={2} />
               Разлагается за {formatMonths(productItem.biodegradableMonths)}
@@ -201,7 +197,7 @@ export const ProductPage = () => {
           </div>
 
           <Card hover={false} className="bg-cream border-0">
-            <div className="text-4xl font-extrabold text-dark tracking-tightest mb-2">
+            <div className="text-3xl sm:text-4xl font-extrabold text-dark tracking-tightest mb-2">
               {formatPrice(productItem.price)}
               <span className="text-base text-muted font-medium ml-1">
                 / {productItem.unit}

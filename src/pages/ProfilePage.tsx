@@ -29,13 +29,11 @@ export const ProfilePage = () => {
   const navigate = useNavigate();
   const { user, profile, loading, signOut, refreshProfile } = useAuth();
 
-  // Список объявлений
   const [myRaw, setMyRaw] = useState<MyRaw[]>([]);
   const [myProducts, setMyProducts] = useState<MyProduct[]>([]);
   const [listingsLoading, setListingsLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
 
-  // Режим редактирования профиля
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
@@ -68,7 +66,7 @@ export const ProfilePage = () => {
 
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto px-6 py-16 text-center text-muted">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-16 text-center text-muted">
         Загрузка...
       </div>
     );
@@ -83,8 +81,6 @@ export const ProfilePage = () => {
     await signOut();
     navigate('/');
   };
-
-  /* ---------- Редактирование профиля ---------- */
 
   const startEditing = () => {
     setForm({
@@ -124,8 +120,6 @@ export const ProfilePage = () => {
     setSaving(false);
   };
 
-  /* ---------- Удаление объявлений ---------- */
-
   const handleDeleteRaw = async (id: string, title: string) => {
     if (!window.confirm(`Удалить объявление «${title}»? Действие нельзя отменить.`)) return;
     setDeleting(id);
@@ -153,9 +147,9 @@ export const ProfilePage = () => {
   const totalListings = myRaw.length + myProducts.length;
 
   return (
-    <div className="max-w-4xl mx-auto px-6 py-8">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-extrabold text-dark tracking-tight">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 md:py-8">
+      <div className="flex justify-between items-center mb-6 md:mb-8 gap-3">
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-dark tracking-tight">
           Личный кабинет
         </h1>
         <Button variant="outline" size="sm" onClick={handleSignOut}>
@@ -163,23 +157,22 @@ export const ProfilePage = () => {
         </Button>
       </div>
 
-      {/* ---------- Карточка профиля (единая) ---------- */}
+      {/* Карточка профиля */}
       <Card hover={false} className="mb-6">
         {!editing ? (
-          // Режим просмотра
           <>
-            <div className="flex justify-between items-start mb-4">
+            <div className="flex justify-between items-start mb-4 gap-3">
               <h2 className="text-xl font-bold text-dark tracking-tight">Профиль</h2>
               <Button variant="ghost" size="sm" onClick={startEditing}>
                 Редактировать
               </Button>
             </div>
-            <div className="space-y-2 text-text">
+            <div className="space-y-2 text-sm sm:text-base text-text">
               <p>
                 <span className="text-muted">Имя: </span>
                 <span className="font-medium text-dark">{profile?.name || '—'}</span>
               </p>
-              <p>
+              <p className="break-all">
                 <span className="text-muted">Email: </span>
                 <span className="font-medium text-dark">{user.email}</span>
               </p>
@@ -199,7 +192,6 @@ export const ProfilePage = () => {
             </p>
           </>
         ) : (
-          // Режим редактирования
           <>
             <h2 className="text-xl font-bold text-dark tracking-tight mb-5">
               Редактирование профиля
@@ -227,8 +219,8 @@ export const ProfilePage = () => {
                 onChange={(e) => setForm({ ...form, company: e.target.value })}
               />
 
-              <div className="flex gap-2">
-                <Button type="submit" disabled={saving}>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Button type="submit" disabled={saving} className="w-full sm:w-auto">
                   {saving ? 'Сохраняем...' : 'Сохранить'}
                 </Button>
                 <Button
@@ -236,6 +228,7 @@ export const ProfilePage = () => {
                   variant="ghost"
                   onClick={cancelEditing}
                   disabled={saving}
+                  className="w-full sm:w-auto"
                 >
                   Отмена
                 </Button>
@@ -245,10 +238,10 @@ export const ProfilePage = () => {
         )}
       </Card>
 
-      {/* ---------- Карточка с объявлениями ---------- */}
+      {/* Объявления */}
       <Card hover={false}>
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-dark tracking-tight">
+        <div className="flex justify-between items-center mb-4 gap-3">
+          <h2 className="text-lg sm:text-xl font-bold text-dark tracking-tight">
             Мои объявления{' '}
             {totalListings > 0 && (
               <span className="text-muted font-medium">({totalListings})</span>
@@ -270,53 +263,70 @@ export const ProfilePage = () => {
             {myRaw.map((item) => (
               <div
                 key={item.id}
-                className="flex items-center justify-between gap-3 p-4 rounded-btn border border-line hover:border-sage transition-all"
+                className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-btn border border-line hover:border-sage transition-all"
               >
                 <Link to={`/product/${item.id}`} className="flex-1 min-w-0">
                   <Badge variant="sage">{RAW_MATERIAL_TYPES[item.type]}</Badge>
                   <p className="font-semibold text-dark mt-2 truncate">{item.title}</p>
                 </Link>
-                <Link
-                  to={`/edit/raw/${item.id}`}
-                  className="p-2 rounded-btn text-muted hover:text-sage hover:bg-sage-light transition-colors"
-                  title="Редактировать"
-                >
-                  <Pencil className="w-4 h-4" strokeWidth={2} />
-                </Link>
-                <span className="font-bold text-dark whitespace-nowrap">
-                  {formatPricePer(item.price_per_ton, 'т')}
-                </span>
-                <button
-                  onClick={() => handleDeleteRaw(item.id, item.title)}
-                  disabled={deleting === item.id}
-                  className="p-2 rounded-btn text-muted hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
-                  title="Удалить"
-                >
-                  <Trash2 className="w-4 h-4" strokeWidth={2} />
-                </button>
+
+                <div className="flex items-center justify-between gap-3 sm:justify-end">
+                  <span className="font-bold text-dark whitespace-nowrap">
+                    {formatPricePer(item.price_per_ton, 'т')}
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <Link
+                      to={`/edit/raw/${item.id}`}
+                      className="p-2 rounded-btn text-muted hover:text-sage hover:bg-sage-light transition-colors"
+                      title="Редактировать"
+                    >
+                      <Pencil className="w-4 h-4" strokeWidth={2} />
+                    </Link>
+                    <button
+                      onClick={() => handleDeleteRaw(item.id, item.title)}
+                      disabled={deleting === item.id}
+                      className="p-2 rounded-btn text-muted hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
+                      title="Удалить"
+                    >
+                      <Trash2 className="w-4 h-4" strokeWidth={2} />
+                    </button>
+                  </div>
+                </div>
               </div>
             ))}
 
             {myProducts.map((item) => (
               <div
                 key={item.id}
-                className="flex items-center justify-between gap-3 p-4 rounded-btn border border-line hover:border-sage transition-all"
+                className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-btn border border-line hover:border-sage transition-all"
               >
                 <Link to={`/product/${item.id}`} className="flex-1 min-w-0">
                   <Badge variant="olive">{PRODUCT_CATEGORIES[item.category]}</Badge>
                   <p className="font-semibold text-dark mt-2 truncate">{item.title}</p>
                 </Link>
-                <span className="font-bold text-dark whitespace-nowrap">
-                  {formatPrice(item.price)} / {item.unit}
-                </span>
-                <button
-                  onClick={() => handleDeleteProduct(item.id, item.title)}
-                  disabled={deleting === item.id}
-                  className="p-2 rounded-btn text-muted hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
-                  title="Удалить"
-                >
-                  <Trash2 className="w-4 h-4" strokeWidth={2} />
-                </button>
+
+                <div className="flex items-center justify-between gap-3 sm:justify-end">
+                  <span className="font-bold text-dark whitespace-nowrap">
+                    {formatPrice(item.price)} / {item.unit}
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <Link
+                      to={`/edit/product/${item.id}`}
+                      className="p-2 rounded-btn text-muted hover:text-sage hover:bg-sage-light transition-colors"
+                      title="Редактировать"
+                    >
+                      <Pencil className="w-4 h-4" strokeWidth={2} />
+                    </Link>
+                    <button
+                      onClick={() => handleDeleteProduct(item.id, item.title)}
+                      disabled={deleting === item.id}
+                      className="p-2 rounded-btn text-muted hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
+                      title="Удалить"
+                    >
+                      <Trash2 className="w-4 h-4" strokeWidth={2} />
+                    </button>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
