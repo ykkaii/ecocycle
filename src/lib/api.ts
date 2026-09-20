@@ -1,5 +1,11 @@
 import { supabase } from './supabase';
-import type { RawMaterial, Product } from '../types';
+import type {
+  RawMaterial,
+  Product,
+  RecyclingPoint,
+  RecyclingRequest,
+  RecyclingCategory,
+} from '../types';
 
 /* ---------- СЫРЬЁ ---------- */
 
@@ -27,7 +33,9 @@ export const fetchRawMaterials = async (): Promise<RawMaterial[]> => {
   }));
 };
 
-export const fetchRawMaterialById = async (id: string): Promise<RawMaterial | null> => {
+export const fetchRawMaterialById = async (
+  id: string
+): Promise<RawMaterial | null> => {
   const { data, error } = await supabase
     .from('raw_materials')
     .select(`*, profiles:seller_id ( name, email )`)
@@ -100,9 +108,74 @@ export const fetchProductById = async (id: string): Promise<Product | null> => {
     location: data.location ?? undefined,
     imageUrl: data.image_url ?? undefined,
     manufacturerId: data.manufacturer_id,
-    manufacturerName: (data as any).profiles?.name ?? 'Неизвестный производитель',
+    manufacturerName:
+      (data as any).profiles?.name ?? 'Неизвестный производитель',
     manufacturerEmail: (data as any).profiles?.email ?? null,
     biodegradableMonths: data.biodegradable_months,
     createdAt: data.created_at,
   };
+};
+
+/* ---------- ПЕРЕРАБОТКА ---------- */
+
+export const fetchRecyclingPoints = async (): Promise<RecyclingPoint[]> => {
+  const { data, error } = await supabase
+    .from('recycling_points')
+    .select('*')
+    .order('region', { ascending: true });
+
+  if (error) throw error;
+
+  return (data ?? []).map((row: any) => ({
+    id: row.id,
+    name: row.name,
+    address: row.address,
+    region: row.region,
+    phone: row.phone,
+    email: row.email,
+    accepts: row.accepts ?? [],
+    workingHours: row.working_hours,
+    description: row.description,
+  }));
+};
+
+export const fetchMyRecyclingRequests = async (
+  userId: string
+): Promise<RecyclingRequest[]> => {
+  const { data, error } = await supabase
+    .from('recycling_requests')
+    .select(`*, recycling_points:point_id ( name )`)
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+
+  return (data ?? []).map((row: any) => ({
+    id: row.id,
+    userId: row.user_id,
+    pointId: row.point_id,
+    pointName: row.recycling_points?.name ?? '—',
+    category: row.category,
+    volume: Number(row.volume),
+    comment: row.comment,
+    status: row.status,
+    createdAt: row.created_at,
+  }));
+};
+
+export const createRecyclingRequest = async (payload: {
+  userId: string;
+  pointId: string;
+  category: RecyclingCategory;
+  volume: number;
+  comment?: string;
+}) => {
+  const { error } = await supabase.from('recycling_requests').insert({
+    user_id: payload.userId,
+    point_id: payload.pointId,
+    category: payload.category,
+    volume: payload.volume,
+    comment: payload.comment || null,
+  });
+  if (error) throw error;
 };

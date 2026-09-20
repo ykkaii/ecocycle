@@ -8,6 +8,7 @@ import { RegisterPage } from './pages/RegisterPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { AddListingPage } from './pages/AddListingPage';
 import { EditListingPage } from './pages/EditListingPage';
+import { RecyclingPage } from './pages/RecyclingPage';
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/add" element={<AddListingPage />} />
           <Route path="/edit/:kind/:id" element={<EditListingPage />} />
+          <Route path="/recycling" element={<RecyclingPage />} />
         </Routes>
       </Layout>
     </BrowserRouter>

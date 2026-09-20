@@ -12,3 +12,22 @@ export const PRODUCT_CATEGORIES: Record<Product['category'], string> = {
   cassettes: 'Кассеты',
   trays: 'Лотки',
 };
+
+import type { RecyclingStatus } from '../types';
+
+export const RECYCLING_STATUSES: Record<RecyclingStatus, string> = {
+  pending: 'На рассмотрении',
+  accepted: 'Принята',
+  completed: 'Завершена',
+  rejected: 'Отклонена',
+};
+
+export const RECYCLING_STATUS_COLORS: Record<
+  RecyclingStatus,
+  'sage' | 'lime' | 'olive' | 'dark'
+> = {
+  pending: 'lime',
+  accepted: 'sage',
+  completed: 'sage',
+  rejected: 'olive',
+};

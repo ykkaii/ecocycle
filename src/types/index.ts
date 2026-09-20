@@ -38,3 +38,30 @@ export interface Product {
   biodegradableMonths: number;
   createdAt: string;
 }
+
+export type RecyclingCategory = 'tableware' | 'pots' | 'cassettes' | 'trays';
+export type RecyclingStatus = 'pending' | 'accepted' | 'completed' | 'rejected';
+
+export interface RecyclingPoint {
+  id: string;
+  name: string;
+  address: string;
+  region: string;
+  phone?: string | null;
+  email?: string | null;
+  accepts: RecyclingCategory[];
+  workingHours?: string | null;
+  description?: string | null;
+}
+
+export interface RecyclingRequest {
+  id: string;
+  userId: string;
+  pointId: string | null;
+  pointName?: string | null;
+  category: RecyclingCategory;
+  volume: number;
+  comment?: string | null;
+  status: RecyclingStatus;
+  createdAt: string;
+}

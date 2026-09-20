@@ -14,6 +14,7 @@ export const Header = () => {
     { to: '/', label: 'Главная' },
     { to: '/catalog/raw', label: 'Сырьё' },
     { to: '/catalog/products', label: 'Продукция' },
+    { to: '/recycling', label: 'Переработка' },
   ];
 
   const handleSignOut = async () => {
