@@ -27,7 +27,7 @@ export const Footer = () => {
           <p className="text-sm text-white/60 leading-relaxed">
             КубГАУ, Краснодар
             <br />
-            ecocycle@example.com
+            sampetova05@mail.ru
           </p>
         </div>
       </div>
