@@ -22,6 +22,8 @@ export const Header = () => {
       ? [...baseLinks, { to: '/admin', label: 'Админка' }]
       : baseLinks;
 
+      
+
   const handleSignOut = async () => {
     await signOut();
     setMenuOpen(false);
