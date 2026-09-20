@@ -5,6 +5,8 @@ import type {
   RecyclingPoint,
   RecyclingRequest,
   RecyclingCategory,
+  RecyclingSourceKind,
+  RecyclingStatus,
 } from '../types';
 
 /* ---------- СЫРЬЁ ---------- */
@@ -32,6 +34,8 @@ export const fetchRawMaterials = async (): Promise<RawMaterial[]> => {
     createdAt: row.created_at,
   }));
 };
+
+
 
 export const fetchRawMaterialById = async (
   id: string
@@ -136,6 +140,8 @@ export const fetchRecyclingPoints = async (): Promise<RecyclingPoint[]> => {
     accepts: row.accepts ?? [],
     workingHours: row.working_hours,
     description: row.description,
+    latitude: row.latitude ? Number(row.latitude) : null,
+    longitude: row.longitude ? Number(row.longitude) : null,
   }));
 };
 
@@ -155,9 +161,12 @@ export const fetchMyRecyclingRequests = async (
     userId: row.user_id,
     pointId: row.point_id,
     pointName: row.recycling_points?.name ?? '—',
+    sourceKind: row.source_kind ?? 'product',
     category: row.category,
+    rawType: row.raw_type,
     volume: Number(row.volume),
     comment: row.comment,
+    adminComment: row.admin_comment,
     status: row.status,
     createdAt: row.created_at,
   }));
@@ -177,5 +186,70 @@ export const createRecyclingRequest = async (payload: {
     volume: payload.volume,
     comment: payload.comment || null,
   });
+  if (error) throw error;
+};
+
+/* ---------- ПЕРЕРАБОТКА: расширенно ---------- */
+
+export const createRecyclingRequestExtended = async (payload: {
+  userId: string;
+  pointId: string;
+  sourceKind: RecyclingSourceKind;
+  category?: RecyclingCategory;
+  rawType?: 'rice_straw' | 'beet_pulp' | 'manure';
+  volume: number;
+  comment?: string;
+}) => {
+  const { error } = await supabase.from('recycling_requests').insert({
+    user_id: payload.userId,
+    point_id: payload.pointId,
+    source_kind: payload.sourceKind,
+    category: payload.category ?? null,
+    raw_type: payload.rawType ?? null,
+    volume: payload.volume,
+    comment: payload.comment || null,
+  });
+  if (error) throw error;
+};
+
+export const fetchAllRecyclingRequests = async (): Promise<RecyclingRequest[]> => {
+  const { data, error } = await supabase
+    .from('recycling_requests')
+    .select(`
+      *,
+      recycling_points:point_id ( name ),
+      profiles:user_id ( name, email )
+    `)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+
+  return (data ?? []).map((row: any) => ({
+    id: row.id,
+    userId: row.user_id,
+    userName: row.profiles?.name ?? '—',
+    userEmail: row.profiles?.email ?? '—',
+    pointId: row.point_id,
+    pointName: row.recycling_points?.name ?? '—',
+    sourceKind: row.source_kind,
+    category: row.category,
+    rawType: row.raw_type,
+    volume: Number(row.volume),
+    comment: row.comment,
+    adminComment: row.admin_comment,
+    status: row.status,
+    createdAt: row.created_at,
+  }));
+};
+
+export const updateRecyclingRequestStatus = async (
+  id: string,
+  status: RecyclingStatus,
+  adminComment?: string
+) => {
+  const { error } = await supabase
+    .from('recycling_requests')
+    .update({ status, admin_comment: adminComment ?? null })
+    .eq('id', id);
   if (error) throw error;
 };

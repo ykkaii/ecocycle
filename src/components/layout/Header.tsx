@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Leaf, User, PlusCircle, LogOut, Menu, X } from 'lucide-react';
+import { Leaf, User, PlusCircle, LogOut, Menu, X, Shield } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { useAuth } from '../../context/AuthContext';
 
@@ -10,12 +10,17 @@ export const Header = () => {
   const { user, profile, signOut } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const navLinks = [
+  const baseLinks = [
     { to: '/', label: 'Главная' },
     { to: '/catalog/raw', label: 'Сырьё' },
     { to: '/catalog/products', label: 'Продукция' },
     { to: '/recycling', label: 'Переработка' },
   ];
+
+  const navLinks =
+    profile?.role === 'admin'
+      ? [...baseLinks, { to: '/admin', label: 'Админка' }]
+      : baseLinks;
 
   const handleSignOut = async () => {
     await signOut();
@@ -29,7 +34,11 @@ export const Header = () => {
     <header className="sticky top-0 z-50 bg-white/75 backdrop-blur-xl border-b border-line">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
         {/* Логотип */}
-        <Link to="/" className="flex items-center gap-2 group shrink-0" onClick={closeMenu}>
+        <Link
+          to="/"
+          className="flex items-center gap-2 group shrink-0"
+          onClick={closeMenu}
+        >
           <div className="bg-sage p-2 rounded-xl group-hover:bg-sage-dark transition-colors">
             <Leaf className="w-5 h-5 text-white" strokeWidth={2.5} />
           </div>
@@ -40,20 +49,25 @@ export const Header = () => {
 
         {/* Навигация — desktop */}
         <nav className="hidden md:flex items-center gap-1 flex-1 justify-center">
-          {navLinks.map((link) => (
-            <Link
-              key={link.to}
-              to={link.to}
-              className={`
-                px-3.5 py-2 rounded-btn text-sm font-medium transition-colors
-                ${location.pathname === link.to
-                  ? 'bg-sage-light text-sage-dark'
-                  : 'text-text hover:text-dark hover:bg-cream'}
-              `}
-            >
-              {link.label}
-            </Link>
-          ))}
+          {navLinks.map((link) => {
+            const isActive = location.pathname === link.to;
+            const isAdmin = link.to === '/admin';
+            return (
+              <Link
+                key={link.to}
+                to={link.to}
+                className={`
+                  flex items-center gap-1.5 px-3.5 py-2 rounded-btn text-sm font-medium transition-colors
+                  ${isActive
+                    ? 'bg-sage-light text-sage-dark'
+                    : 'text-text hover:text-dark hover:bg-cream'}
+                `}
+              >
+                {isAdmin && <Shield className="w-3.5 h-3.5" strokeWidth={2.2} />}
+                {link.label}
+              </Link>
+            );
+          })}
         </nav>
 
         {/* Действия — desktop */}
@@ -112,21 +126,26 @@ export const Header = () => {
       {menuOpen && (
         <div className="md:hidden border-t border-line bg-white">
           <nav className="px-4 py-4 space-y-1">
-            {navLinks.map((link) => (
-              <Link
-                key={link.to}
-                to={link.to}
-                onClick={closeMenu}
-                className={`
-                  block px-4 py-3 rounded-btn text-base font-medium transition-colors
-                  ${location.pathname === link.to
-                    ? 'bg-sage-light text-sage-dark'
-                    : 'text-text hover:bg-cream'}
-                `}
-              >
-                {link.label}
-              </Link>
-            ))}
+            {navLinks.map((link) => {
+              const isActive = location.pathname === link.to;
+              const isAdmin = link.to === '/admin';
+              return (
+                <Link
+                  key={link.to}
+                  to={link.to}
+                  onClick={closeMenu}
+                  className={`
+                    flex items-center gap-2 px-4 py-3 rounded-btn text-base font-medium transition-colors
+                    ${isActive
+                      ? 'bg-sage-light text-sage-dark'
+                      : 'text-text hover:bg-cream'}
+                  `}
+                >
+                  {isAdmin && <Shield className="w-4 h-4" strokeWidth={2.2} />}
+                  {link.label}
+                </Link>
+              );
+            })}
 
             <div className="pt-3 mt-3 border-t border-line space-y-2">
               {user ? (

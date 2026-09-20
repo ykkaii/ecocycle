@@ -1,22 +1,30 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { MapPin, Phone, Mail, Clock, Recycle, CheckCircle2 } from 'lucide-react';
+import { MapPin, Phone, Mail, Clock, Recycle, CheckCircle2, List, Map as MapIcon } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
+import { PointsMap } from '../components/features/PointsMap';
+import { RecyclingCycle } from '../components/features/RecyclingCycle';
 import { useAuth } from '../context/AuthContext';
 import {
   fetchRecyclingPoints,
-  createRecyclingRequest,
+  createRecyclingRequestExtended,
   fetchMyRecyclingRequests,
 } from '../lib/api';
-import { PRODUCT_CATEGORIES } from '../utils/constants';
+import {
+  PRODUCT_CATEGORIES,
+  RAW_MATERIAL_TYPES,
+  RECYCLING_STATUSES,
+  RECYCLING_STATUS_COLORS,
+} from '../utils/constants';
 import { formatDate } from '../utils/format';
 import type {
   RecyclingPoint,
   RecyclingRequest,
   RecyclingCategory,
+  RecyclingSourceKind,
 } from '../types';
 
 export const RecyclingPage = () => {
@@ -28,17 +36,21 @@ export const RecyclingPage = () => {
   const [error, setError] = useState('');
   const [regionFilter, setRegionFilter] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<'' | RecyclingCategory>('');
+  const [view, setView] = useState<'list' | 'map'>('list');
 
-  // Форма заявки
+  // Форма
   const [form, setForm] = useState({
     pointId: '',
+    sourceKind: 'product' as RecyclingSourceKind,
     category: 'tableware' as RecyclingCategory,
+    rawType: 'rice_straw' as 'rice_straw' | 'beet_pulp' | 'manure',
     volume: '',
     comment: '',
   });
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [openRequestId, setOpenRequestId] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -52,7 +64,7 @@ export const RecyclingPage = () => {
         setMyRequests(reqs);
         if (pts.length > 0) setForm((f) => ({ ...f, pointId: pts[0].id }));
       } catch (err: any) {
-        setError(err.message ?? 'Не удалось загрузить пункты приёма');
+        setError(err.message ?? 'Не удалось загрузить данные');
       } finally {
         setLoading(false);
       }
@@ -84,18 +96,18 @@ export const RecyclingPage = () => {
     setSubmitting(true);
 
     try {
-      await createRecyclingRequest({
+      await createRecyclingRequestExtended({
         userId: user.id,
         pointId: form.pointId,
-        category: form.category,
+        sourceKind: form.sourceKind,
+        category: form.sourceKind === 'product' ? form.category : undefined,
+        rawType: form.sourceKind === 'raw' ? form.rawType : undefined,
         volume: Number(form.volume),
         comment: form.comment,
       });
 
-      // Перезагружаем заявки
       const reqs = await fetchMyRecyclingRequests(user.id);
       setMyRequests(reqs);
-
       setSuccess(true);
       setForm((f) => ({ ...f, volume: '', comment: '' }));
       setTimeout(() => setSuccess(false), 4000);
@@ -115,22 +127,22 @@ export const RecyclingPage = () => {
       <div className="mb-8 md:mb-12">
         <Badge variant="sage">Замкнутый цикл</Badge>
         <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-dark tracking-tightest leading-tight mt-4 mb-4">
-          Переработка продукции
+          Переработка
         </h1>
         <p className="text-base sm:text-lg text-text leading-relaxed max-w-2xl">
-          Сдайте использованную биоразлагаемую продукцию в ближайший пункт приёма —
-          она вернётся в производство или превратится в компост.
+          Сдайте использованную продукцию или остатки сырья в ближайший пункт приёма —
+          они вернутся в производство или превратятся в компост.
         </p>
       </div>
 
-      {/* Как это работает */}
+      {/* Шаги */}
       <section className="mb-10 md:mb-16">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
           {[
-            { icon: Recycle, title: 'Выбираете пункт', text: 'Найдите ближайший пункт приёма на карте или в списке.' },
-            { icon: CheckCircle2, title: 'Оставляете заявку', text: 'Укажите категорию и объём — мы передадим пункту.' },
-            { icon: Clock, title: 'Пункт подтверждает', text: 'В течение 1–2 дней пункт свяжется с вами для уточнения.' },
-            { icon: CheckCircle2, title: 'Сдаёте продукцию', text: 'Привозите продукцию, получаете подтверждение о переработке.' },
+            { icon: Recycle, title: 'Выбираете пункт', text: 'Найдите ближайший на карте или в списке.' },
+            { icon: CheckCircle2, title: 'Оставляете заявку', text: 'Укажите, что сдаёте, и объём.' },
+            { icon: Clock, title: 'Пункт подтверждает', text: 'В течение 1–2 дней свяжется с вами.' },
+            { icon: CheckCircle2, title: 'Сдаёте материал', text: 'Привозите продукцию в удобное время.' },
           ].map((step, i) => (
             <Card key={i} className="!p-5 md:!p-6">
               <div className="w-10 h-10 bg-sage-light rounded-xl flex items-center justify-center mb-4">
@@ -144,11 +156,35 @@ export const RecyclingPage = () => {
         </div>
       </section>
 
-      {/* Список пунктов + фильтры */}
+      {/* Пункты приёма */}
       <section className="mb-10 md:mb-16">
-        <h2 className="text-2xl sm:text-3xl font-extrabold text-dark tracking-tight mb-5 md:mb-6">
-          Пункты приёма
-        </h2>
+        <div className="flex items-center justify-between gap-4 mb-5 md:mb-6">
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-dark tracking-tight">
+            Пункты приёма
+          </h2>
+          <div className="flex p-1 bg-cream rounded-btn">
+            <button
+              type="button"
+              onClick={() => setView('list')}
+              className={`px-3 py-1.5 rounded-btn text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                view === 'list' ? 'bg-white text-dark shadow-soft' : 'text-muted'
+              }`}
+            >
+              <List className="w-3.5 h-3.5" strokeWidth={2.2} />
+              Список
+            </button>
+            <button
+              type="button"
+              onClick={() => setView('map')}
+              className={`px-3 py-1.5 rounded-btn text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                view === 'map' ? 'bg-white text-dark shadow-soft' : 'text-muted'
+              }`}
+            >
+              <MapIcon className="w-3.5 h-3.5" strokeWidth={2.2} />
+              Карта
+            </button>
+          </div>
+        </div>
 
         <div className="bg-surface border border-line rounded-card p-3 sm:p-4 mb-6 space-y-3">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -175,18 +211,7 @@ export const RecyclingPage = () => {
         </div>
 
         {loading && (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div
-                key={i}
-                className="bg-surface border border-line rounded-card p-5 animate-pulse space-y-3"
-              >
-                <div className="h-4 bg-cream rounded w-2/3" />
-                <div className="h-3 bg-cream rounded w-full" />
-                <div className="h-3 bg-cream rounded w-1/2" />
-              </div>
-            ))}
-          </div>
+          <p className="text-muted text-sm">Загрузка пунктов...</p>
         )}
 
         {!loading && error && (
@@ -195,13 +220,17 @@ export const RecyclingPage = () => {
           </div>
         )}
 
-        {!loading && !error && filteredPoints.length === 0 && (
+        {!loading && !error && view === 'map' && (
+          <PointsMap points={filteredPoints} />
+        )}
+
+        {!loading && !error && view === 'list' && filteredPoints.length === 0 && (
           <p className="text-center text-muted py-10">
             По вашему фильтру пунктов не найдено
           </p>
         )}
 
-        {!loading && !error && filteredPoints.length > 0 && (
+        {!loading && !error && view === 'list' && filteredPoints.length > 0 && (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {filteredPoints.map((point) => (
               <Card key={point.id} className="!p-5 md:!p-6 flex flex-col">
@@ -256,7 +285,7 @@ export const RecyclingPage = () => {
         )}
       </section>
 
-      {/* Форма заявки */}
+      {/* Форма */}
       <section className="mb-10 md:mb-16">
         <h2 className="text-2xl sm:text-3xl font-extrabold text-dark tracking-tight mb-5 md:mb-6">
           Оставить заявку
@@ -265,7 +294,7 @@ export const RecyclingPage = () => {
         {!user ? (
           <Card hover={false} className="text-center py-8">
             <p className="text-text mb-6">
-              Чтобы оставить заявку на переработку, войдите или зарегистрируйтесь.
+              Чтобы оставить заявку, войдите или зарегистрируйтесь.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Link to="/login" className="w-full sm:w-auto">
@@ -294,6 +323,37 @@ export const RecyclingPage = () => {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Тип: сырьё / продукция */}
+              <div>
+                <label className="block text-sm font-medium text-dark mb-1.5">
+                  Что сдаёте
+                </label>
+                <div className="flex gap-2 p-1 bg-cream rounded-btn">
+                  <button
+                    type="button"
+                    onClick={() => setForm({ ...form, sourceKind: 'product' })}
+                    className={`flex-1 py-2 rounded-btn text-sm font-semibold transition-all ${
+                      form.sourceKind === 'product'
+                        ? 'bg-white text-dark shadow-soft'
+                        : 'text-muted'
+                    }`}
+                  >
+                    Продукция
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setForm({ ...form, sourceKind: 'raw' })}
+                    className={`flex-1 py-2 rounded-btn text-sm font-semibold transition-all ${
+                      form.sourceKind === 'raw'
+                        ? 'bg-white text-dark shadow-soft'
+                        : 'text-muted'
+                    }`}
+                  >
+                    Сырьё
+                  </button>
+                </div>
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-dark mb-1.5">
                   Пункт приёма
@@ -313,24 +373,48 @@ export const RecyclingPage = () => {
                 </select>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-dark mb-1.5">
-                  Категория продукции
-                </label>
-                <select
-                  className={selectClasses}
-                  value={form.category}
-                  onChange={(e) =>
-                    setForm({ ...form, category: e.target.value as RecyclingCategory })
-                  }
-                >
-                  {Object.entries(PRODUCT_CATEGORIES).map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {form.sourceKind === 'product' ? (
+                <div>
+                  <label className="block text-sm font-medium text-dark mb-1.5">
+                    Категория продукции
+                  </label>
+                  <select
+                    className={selectClasses}
+                    value={form.category}
+                    onChange={(e) =>
+                      setForm({ ...form, category: e.target.value as RecyclingCategory })
+                    }
+                  >
+                    {Object.entries(PRODUCT_CATEGORIES).map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-sm font-medium text-dark mb-1.5">
+                    Тип сырья
+                  </label>
+                  <select
+                    className={selectClasses}
+                    value={form.rawType}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        rawType: e.target.value as 'rice_straw' | 'beet_pulp' | 'manure',
+                      })
+                    }
+                  >
+                    {Object.entries(RAW_MATERIAL_TYPES).map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               <Input
                 label="Объём (кг)"
@@ -363,36 +447,69 @@ export const RecyclingPage = () => {
         )}
       </section>
 
-      {/* Мои заявки */}
+      {/* Мои заявки с циклом */}
       {user && myRequests.length > 0 && (
         <section>
           <h2 className="text-2xl sm:text-3xl font-extrabold text-dark tracking-tight mb-5 md:mb-6">
             Мои заявки
           </h2>
-          <div className="space-y-3">
-            {myRequests.map((req) => (
-              <Card key={req.id} className="!p-4 md:!p-5">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap mb-2">
-                      <Badge variant="sage">{PRODUCT_CATEGORIES[req.category]}</Badge>
-                      <Badge variant={req.status === 'rejected' ? 'olive' : 'lime'}>
-                        {req.status === 'pending' && 'На рассмотрении'}
-                        {req.status === 'accepted' && 'Принята'}
-                        {req.status === 'completed' && 'Завершена'}
-                        {req.status === 'rejected' && 'Отклонена'}
-                      </Badge>
+          <div className="space-y-4">
+            {myRequests.map((req) => {
+              const isOpen = openRequestId === req.id;
+              return (
+                <Card key={req.id} className="!p-4 md:!p-5">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-2">
+                        <Badge variant="sage">
+                          {req.sourceKind === 'raw'
+                            ? 'Сырьё'
+                            : 'Продукция'}
+                        </Badge>
+                        {req.sourceKind === 'product' && req.category && (
+                          <Badge variant="olive">
+                            {PRODUCT_CATEGORIES[req.category]}
+                          </Badge>
+                        )}
+                        {req.sourceKind === 'raw' && req.rawType && (
+                          <Badge variant="olive">
+                            {RAW_MATERIAL_TYPES[req.rawType]}
+                          </Badge>
+                        )}
+                        <Badge variant={RECYCLING_STATUS_COLORS[req.status]}>
+                          {RECYCLING_STATUSES[req.status]}
+                        </Badge>
+                      </div>
+                      <p className="font-semibold text-dark truncate">
+                        {req.pointName}
+                      </p>
+                      <p className="text-xs text-muted mt-1">
+                        {req.volume} кг · {formatDate(req.createdAt)}
+                      </p>
                     </div>
-                    <p className="font-semibold text-dark truncate">
-                      {req.pointName}
-                    </p>
-                    <p className="text-xs text-muted mt-1">
-                      {req.volume} кг · {formatDate(req.createdAt)}
-                    </p>
+
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() =>
+                        setOpenRequestId(isOpen ? null : req.id)
+                      }
+                    >
+                      {isOpen ? 'Скрыть цикл' : 'Показать цикл'}
+                    </Button>
                   </div>
-                </div>
-              </Card>
-            ))}
+
+                  {isOpen && (
+                    <div className="mt-5">
+                      <RecyclingCycle
+                        status={req.status}
+                        adminComment={req.adminComment}
+                      />
+                    </div>
+                  )}
+                </Card>
+              );
+            })}
           </div>
         </section>
       )}

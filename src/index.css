@@ -56,4 +56,17 @@
   ::-webkit-scrollbar-thumb:hover {
     background: #7CA982;
   }
+
+/* Leaflet: убираем рамку у наших маркеров */
+  .ecocycle-marker {
+    background: transparent;
+    border: none;
+  }
+  .leaflet-container {
+    font-family: 'Manrope', sans-serif;
+    z-index: 0;
+  }
+  .leaflet-popup-content-wrapper {
+    border-radius: 12px;
+  }
 }

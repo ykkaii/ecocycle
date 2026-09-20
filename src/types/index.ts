@@ -1,4 +1,4 @@
-export type UserRole = 'supplier' | 'buyer';
+export type UserRole = 'supplier' | 'buyer' | 'admin';
 
 export interface Profile {
   id: string;
@@ -40,7 +40,15 @@ export interface Product {
 }
 
 export type RecyclingCategory = 'tableware' | 'pots' | 'cassettes' | 'trays';
-export type RecyclingStatus = 'pending' | 'accepted' | 'completed' | 'rejected';
+
+export type RecyclingSourceKind = 'raw' | 'product';
+
+export type RecyclingStatus =
+  | 'pending'
+  | 'accepted'
+  | 'in_progress'
+  | 'completed'
+  | 'rejected';
 
 export interface RecyclingPoint {
   id: string;
@@ -52,16 +60,23 @@ export interface RecyclingPoint {
   accepts: RecyclingCategory[];
   workingHours?: string | null;
   description?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 export interface RecyclingRequest {
   id: string;
   userId: string;
+  userName?: string | null;
+  userEmail?: string | null;
   pointId: string | null;
   pointName?: string | null;
-  category: RecyclingCategory;
+  sourceKind: RecyclingSourceKind;
+  category: RecyclingCategory | null;
+  rawType: 'rice_straw' | 'beet_pulp' | 'manure' | null;
   volume: number;
   comment?: string | null;
+  adminComment?: string | null;
   status: RecyclingStatus;
   createdAt: string;
 }

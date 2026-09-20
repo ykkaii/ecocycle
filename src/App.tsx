@@ -9,6 +9,7 @@ import { ProfilePage } from './pages/ProfilePage';
 import { AddListingPage } from './pages/AddListingPage';
 import { EditListingPage } from './pages/EditListingPage';
 import { RecyclingPage } from './pages/RecyclingPage';
+import { AdminPage } from './pages/AdminPage';
 
 function App() {
   return (
@@ -25,6 +26,7 @@ function App() {
           <Route path="/add" element={<AddListingPage />} />
           <Route path="/edit/:kind/:id" element={<EditListingPage />} />
           <Route path="/recycling" element={<RecyclingPage />} />
+          <Route path="/admin" element={<AdminPage />} />
         </Routes>
       </Layout>
     </BrowserRouter>
