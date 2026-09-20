@@ -1,14 +1,22 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Trash2, Pencil } from 'lucide-react';
+import { Trash2, Pencil, Recycle } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
+import { RecyclingCycle } from '../components/features/RecyclingCycle';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
-import { formatPrice, formatPricePer } from '../utils/format';
-import { RAW_MATERIAL_TYPES, PRODUCT_CATEGORIES } from '../utils/constants';
+import { fetchMyRecyclingRequests } from '../lib/api';
+import { formatPrice, formatPricePer, formatDate } from '../utils/format';
+import {
+  RAW_MATERIAL_TYPES,
+  PRODUCT_CATEGORIES,
+  RECYCLING_STATUSES,
+  RECYCLING_STATUS_COLORS,
+} from '../utils/constants';
+import type { RecyclingRequest } from '../types';
 
 interface MyRaw {
   id: string;
@@ -29,11 +37,18 @@ export const ProfilePage = () => {
   const navigate = useNavigate();
   const { user, profile, loading, signOut, refreshProfile } = useAuth();
 
+  // Объявления
   const [myRaw, setMyRaw] = useState<MyRaw[]>([]);
   const [myProducts, setMyProducts] = useState<MyProduct[]>([]);
   const [listingsLoading, setListingsLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
 
+  // Заявки на переработку
+  const [requests, setRequests] = useState<RecyclingRequest[]>([]);
+  const [requestsLoading, setRequestsLoading] = useState(true);
+  const [openRequestId, setOpenRequestId] = useState<string | null>(null);
+
+  // Редактирование профиля
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
@@ -59,8 +74,22 @@ export const ProfilePage = () => {
     setListingsLoading(false);
   };
 
+  const loadRequests = async () => {
+    if (!user) return;
+    setRequestsLoading(true);
+    try {
+      const data = await fetchMyRecyclingRequests(user.id);
+      setRequests(data);
+    } catch (err) {
+      console.error('loadRequests error:', err);
+    } finally {
+      setRequestsLoading(false);
+    }
+  };
+
   useEffect(() => {
     loadListings();
+    loadRequests();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
@@ -81,6 +110,8 @@ export const ProfilePage = () => {
     await signOut();
     navigate('/');
   };
+
+  /* ---------- Редактирование профиля ---------- */
 
   const startEditing = () => {
     setForm({
@@ -120,6 +151,8 @@ export const ProfilePage = () => {
     setSaving(false);
   };
 
+  /* ---------- Удаление объявлений ---------- */
+
   const handleDeleteRaw = async (id: string, title: string) => {
     if (!window.confirm(`Удалить объявление «${title}»? Действие нельзя отменить.`)) return;
     setDeleting(id);
@@ -145,6 +178,7 @@ export const ProfilePage = () => {
   };
 
   const totalListings = myRaw.length + myProducts.length;
+  const totalRequests = requests.length;
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 md:py-8">
@@ -157,7 +191,7 @@ export const ProfilePage = () => {
         </Button>
       </div>
 
-      {/* Карточка профиля */}
+      {/* ---------- Карточка профиля ---------- */}
       <Card hover={false} className="mb-6">
         {!editing ? (
           <>
@@ -179,7 +213,11 @@ export const ProfilePage = () => {
               <p>
                 <span className="text-muted">Роль: </span>
                 <span className="font-medium text-dark">
-                  {profile?.role === 'supplier' ? 'Поставщик сырья' : 'Покупатель'}
+                  {profile?.role === 'admin'
+                    ? 'Администратор'
+                    : profile?.role === 'supplier'
+                    ? 'Поставщик сырья'
+                    : 'Покупатель'}
                 </span>
               </p>
               <p>
@@ -187,9 +225,11 @@ export const ProfilePage = () => {
                 <span className="font-medium text-dark">{profile?.company || '—'}</span>
               </p>
             </div>
-            <p className="text-xs text-muted mt-4">
-              Email и роль изменить нельзя. Если нужно — создайте новый аккаунт.
-            </p>
+            {profile?.role !== 'admin' && (
+              <p className="text-xs text-muted mt-4">
+                Email и роль изменить нельзя. Если нужно — создайте новый аккаунт.
+              </p>
+            )}
           </>
         ) : (
           <>
@@ -238,8 +278,8 @@ export const ProfilePage = () => {
         )}
       </Card>
 
-      {/* Объявления */}
-      <Card hover={false}>
+      {/* ---------- Мои объявления ---------- */}
+      <Card hover={false} className="mb-6">
         <div className="flex justify-between items-center mb-4 gap-3">
           <h2 className="text-lg sm:text-xl font-bold text-dark tracking-tight">
             Мои объявления{' '}
@@ -329,6 +369,100 @@ export const ProfilePage = () => {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+      </Card>
+
+      {/* ---------- Мои заявки на переработку ---------- */}
+      <Card hover={false}>
+        <div className="flex justify-between items-center mb-4 gap-3">
+          <div className="flex items-center gap-2">
+            <Recycle className="w-5 h-5 text-sage" strokeWidth={2.2} />
+            <h2 className="text-lg sm:text-xl font-bold text-dark tracking-tight">
+              Мои заявки на переработку{' '}
+              {totalRequests > 0 && (
+                <span className="text-muted font-medium">({totalRequests})</span>
+              )}
+            </h2>
+          </div>
+          <Link to="/recycling">
+            <Button size="sm" variant="outline">
+              Новая
+            </Button>
+          </Link>
+        </div>
+
+        {requestsLoading ? (
+          <p className="text-muted text-sm">Загрузка заявок...</p>
+        ) : totalRequests === 0 ? (
+          <div>
+            <p className="text-text mb-4">
+              Пока заявок нет. Сдайте использованную продукцию или остатки сырья —
+              они вернутся в производство или превратятся в компост.
+            </p>
+            <Link to="/recycling">
+              <Button variant="outline" size="sm">
+                Оставить заявку
+              </Button>
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {requests.map((req) => {
+              const isOpen = openRequestId === req.id;
+              const itemLabel =
+                req.sourceKind === 'raw'
+                  ? req.rawType
+                    ? RAW_MATERIAL_TYPES[req.rawType]
+                    : 'Сырьё'
+                  : req.category
+                  ? PRODUCT_CATEGORIES[req.category]
+                  : 'Продукция';
+
+              return (
+                <div
+                  key={req.id}
+                  className="rounded-btn border border-line hover:border-sage transition-all p-4"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-2">
+                        <Badge variant="sage">
+                          {req.sourceKind === 'raw' ? 'Сырьё' : 'Продукция'}
+                        </Badge>
+                        <Badge variant="olive">{itemLabel}</Badge>
+                        <Badge variant={RECYCLING_STATUS_COLORS[req.status]}>
+                          {RECYCLING_STATUSES[req.status]}
+                        </Badge>
+                      </div>
+                      <p className="font-semibold text-dark truncate">
+                        {req.pointName}
+                      </p>
+                      <p className="text-xs text-muted mt-1">
+                        {req.volume} кг · {formatDate(req.createdAt)}
+                      </p>
+                    </div>
+
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setOpenRequestId(isOpen ? null : req.id)}
+                    >
+                      {isOpen ? 'Скрыть цикл' : 'Показать цикл'}
+                    </Button>
+                  </div>
+
+                  {isOpen && (
+                    <div className="mt-4">
+                      <RecyclingCycle
+                        status={req.status}
+                        adminComment={req.adminComment}
+                      />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </Card>
