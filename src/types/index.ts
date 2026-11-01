@@ -1,4 +1,9 @@
-export type UserRole = 'supplier' | 'buyer' | 'admin';
+export type UserRole =
+  | 'supplier'          // Поставщик сырья
+  | 'producer'          // Производитель
+  | 'buyer'             // Покупатель
+  | 'collection_point'  // Пункт приёма
+  | 'admin';             // Администратор
 
 export interface Profile {
   id: string;
