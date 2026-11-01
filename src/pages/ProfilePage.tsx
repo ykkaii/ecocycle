@@ -187,6 +187,18 @@ export const ProfilePage = () => {
 
   const totalRequests = requests.length;
 
+  // Функция для красивого вывода роли
+  const getRoleLabel = (role?: string) => {
+    switch (role) {
+      case 'supplier': return 'Поставщик сырья';
+      case 'producer': return 'Производитель';
+      case 'buyer': return 'Покупатель';
+      case 'collection_point': return 'Пункт приёма';
+      case 'admin': return 'Администратор';
+      default: return role;
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-6">
       {/* ---------- Профиль ---------- */}
@@ -197,13 +209,7 @@ export const ProfilePage = () => {
               {profile?.name || 'Пользователь'}
             </h1>
             <p className="text-sm text-muted mt-1">
-              {profile?.role === 'supplier'
-                ? 'Поставщик сырья'
-                : profile?.role === 'buyer'
-                ? 'Покупатель'
-                : profile?.role === 'admin'
-                ? 'Администратор'
-                : profile?.role}
+              {getRoleLabel(profile?.role)}
               {profile?.company && ` · ${profile.company}`}
             </p>
             <p className="text-sm text-muted mt-0.5">{user.email}</p>
@@ -347,7 +353,7 @@ export const ProfilePage = () => {
         )}
       </Card>
 
-      {/* ---------- Входящие заявки на сделки (US-P-05, US-P-06, US-P-07) ---------- */}
+      {/* ---------- Входящие заявки на сделки ---------- */}
       <Card hover={false}>
         <div className="flex items-center gap-2 mb-4">
           <Handshake className="w-5 h-5 text-sage" strokeWidth={2.2} />
@@ -382,7 +388,7 @@ export const ProfilePage = () => {
                             ? 'sage'
                             : deal.status === 'accepted'
                             ? 'olive'
-                            : 'muted'
+                            : 'dark' // заменили 'muted' на 'dark'
                         }
                       >
                         {deal.status === 'pending'
@@ -393,7 +399,7 @@ export const ProfilePage = () => {
                           ? 'Отклонена'
                           : deal.status}
                       </Badge>
-                      <Badge variant="muted">
+                      <Badge variant="dark"> {/* заменили 'muted' на 'dark' */}
                         {deal.itemKind === 'raw' ? 'Сырьё' : 'Продукция'}
                       </Badge>
                     </div>
@@ -445,7 +451,7 @@ export const ProfilePage = () => {
         )}
       </Card>
 
-      {/* ---------- История продаж (US-P-08) ---------- */}
+      {/* ---------- История продаж ---------- */}
       <Card hover={false}>
         <h2 className="text-lg sm:text-xl font-bold text-dark tracking-tight mb-4">
           История продаж{' '}
@@ -520,7 +526,7 @@ export const ProfilePage = () => {
                       ? 'sage'
                       : deal.status === 'accepted'
                       ? 'olive'
-                      : 'muted'
+                      : 'dark' // заменили 'muted' на 'dark'
                   }
                 >
                   {deal.status === 'pending'

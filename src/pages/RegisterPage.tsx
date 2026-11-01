@@ -5,6 +5,7 @@ import { Input } from '../components/ui/Input';
 import { Card } from '../components/ui/Card';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import type { UserRole } from '../types';
 
 export const RegisterPage = () => {
   const navigate = useNavigate();
@@ -14,7 +15,7 @@ export const RegisterPage = () => {
     email: '',
     password: '',
     name: '',
-    role: 'supplier' as 'supplier' | 'buyer',
+    role: 'supplier' as UserRole,
     company: '',
   });
   const [error, setError] = useState('');
@@ -58,7 +59,7 @@ export const RegisterPage = () => {
       return;
     }
 
-    // 3. ГЛАВНОЕ: перезагружаем профиль в контексте, чтобы имя появилось сразу
+    // 3. Перезагружаем профиль в контексте, чтобы имя появилось сразу
     await refreshProfile();
 
     // 4. Редирект
@@ -122,12 +123,12 @@ export const RegisterPage = () => {
             <select
               className={selectClasses}
               value={form.role}
-              onChange={(e) =>
-                setForm({ ...form, role: e.target.value as 'supplier' | 'buyer' })
-              }
+              onChange={(e) => setForm({ ...form, role: e.target.value as UserRole })}
             >
               <option value="supplier">Поставщик сырья</option>
+              <option value="producer">Производитель</option>
               <option value="buyer">Покупатель</option>
+              <option value="collection_point">Пункт приёма</option>
             </select>
           </div>
 
