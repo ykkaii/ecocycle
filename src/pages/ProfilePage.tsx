@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Trash2, Pencil, Recycle } from 'lucide-react';
+import { Trash2, Pencil, Recycle, Check, X, Handshake } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card } from '../components/ui/Card';
@@ -9,6 +9,12 @@ import { RecyclingCycle } from '../components/features/RecyclingCycle';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { fetchMyRecyclingRequests } from '../lib/api';
+import {
+  getIncomingDeals,
+  getSalesHistory,
+  getOutgoingDeals,
+  updateDealStatus,
+} from '../lib/deals';
 import { formatPrice, formatPricePer, formatDate } from '../utils/format';
 import {
   RAW_MATERIAL_TYPES,
@@ -16,7 +22,7 @@ import {
   RECYCLING_STATUSES,
   RECYCLING_STATUS_COLORS,
 } from '../utils/constants';
-import type { RecyclingRequest } from '../types';
+import type { RecyclingRequest, Deal } from '../types';
 
 interface MyRaw {
   id: string;
@@ -48,11 +54,31 @@ export const ProfilePage = () => {
   const [requestsLoading, setRequestsLoading] = useState(true);
   const [openRequestId, setOpenRequestId] = useState<string | null>(null);
 
+  // Сделки
+  const [incomingDeals, setIncomingDeals] = useState<Deal[]>([]);
+  const [salesHistory, setSalesHistory] = useState<Deal[]>([]);
+  const [outgoingDeals, setOutgoingDeals] = useState<Deal[]>([]);
+  const [dealActionId, setDealActionId] = useState<string | null>(null);
+
   // Редактирование профиля
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [form, setForm] = useState({ name: '', company: '' });
+
+  const loadDeals = () => {
+    if (!user) return;
+    setIncomingDeals(getIncomingDeals(user.id));
+    setSalesHistory(getSalesHistory(user.id));
+    setOutgoingDeals(getOutgoingDeals(user.id));
+  };
+
+  const handleDealAction = (dealId: string, status: 'accepted' | 'rejected') => {
+    setDealActionId(dealId);
+    updateDealStatus(dealId, status);
+    loadDeals();
+    setDealActionId(null);
+  };
 
   const loadListings = async () => {
     if (!user) return;
@@ -90,6 +116,7 @@ export const ProfilePage = () => {
   useEffect(() => {
     loadListings();
     loadRequests();
+    loadDeals();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
@@ -111,205 +138,153 @@ export const ProfilePage = () => {
     navigate('/');
   };
 
-  /* ---------- Редактирование профиля ---------- */
-
-  const startEditing = () => {
-    setForm({
-      name: profile?.name ?? '',
-      company: profile?.company ?? '',
-    });
-    setSaveError('');
-    setEditing(true);
-  };
-
-  const cancelEditing = () => {
-    setEditing(false);
-    setSaveError('');
-  };
-
-  const handleSaveProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaveError('');
-    setSaving(true);
-
-    const { error } = await supabase
-      .from('profiles')
-      .update({
-        name: form.name.trim(),
-        company: form.company.trim() || null,
-      })
-      .eq('id', user.id);
-
-    if (error) {
-      setSaveError(error.message);
-      setSaving(false);
-      return;
-    }
-
-    await refreshProfile();
-    setEditing(false);
-    setSaving(false);
-  };
-
-  /* ---------- Удаление объявлений ---------- */
-
   const handleDeleteRaw = async (id: string, title: string) => {
-    if (!window.confirm(`Удалить объявление «${title}»? Действие нельзя отменить.`)) return;
+    if (!confirm(`Удалить объявление «${title}»?`)) return;
     setDeleting(id);
-    const { error } = await supabase.from('raw_materials').delete().eq('id', id);
-    if (error) {
-      alert(error.message);
-    } else {
-      setMyRaw((prev) => prev.filter((item) => item.id !== id));
-    }
+    await supabase.from('raw_materials').delete().eq('id', id);
+    await loadListings();
     setDeleting(null);
   };
 
   const handleDeleteProduct = async (id: string, title: string) => {
-    if (!window.confirm(`Удалить объявление «${title}»? Действие нельзя отменить.`)) return;
+    if (!confirm(`Удалить объявление «${title}»?`)) return;
     setDeleting(id);
-    const { error } = await supabase.from('products').delete().eq('id', id);
-    if (error) {
-      alert(error.message);
-    } else {
-      setMyProducts((prev) => prev.filter((item) => item.id !== id));
-    }
+    await supabase.from('products').delete().eq('id', id);
+    await loadListings();
     setDeleting(null);
   };
 
-  const totalListings = myRaw.length + myProducts.length;
+  const startEdit = () => {
+    setForm({
+      name: profile?.name ?? '',
+      company: profile?.company ?? '',
+    });
+    setEditing(true);
+    setSaveError('');
+  };
+
+  const handleSaveProfile = async () => {
+    if (!user) return;
+    setSaving(true);
+    setSaveError('');
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          name: form.name.trim(),
+          company: form.company.trim() || null,
+        })
+        .eq('id', user.id);
+      if (error) throw error;
+      await refreshProfile();
+      setEditing(false);
+    } catch (err: any) {
+      setSaveError(err.message ?? 'Не удалось сохранить');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const totalRequests = requests.length;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 md:py-8">
-      <div className="flex justify-between items-center mb-6 md:mb-8 gap-3">
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-dark tracking-tight">
-          Личный кабинет
-        </h1>
-        <Button variant="outline" size="sm" onClick={handleSignOut}>
-          Выйти
-        </Button>
-      </div>
-
-      {/* ---------- Карточка профиля ---------- */}
-      <Card hover={false} className="mb-6">
-        {!editing ? (
-          <>
-            <div className="flex justify-between items-start mb-4 gap-3">
-              <h2 className="text-xl font-bold text-dark tracking-tight">Профиль</h2>
-              <Button variant="ghost" size="sm" onClick={startEditing}>
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+      {/* ---------- Профиль ---------- */}
+      <Card hover={false}>
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-dark tracking-tight">
+              {profile?.name || 'Пользователь'}
+            </h1>
+            <p className="text-sm text-muted mt-1">
+              {profile?.role === 'supplier'
+                ? 'Поставщик сырья'
+                : profile?.role === 'buyer'
+                ? 'Покупатель'
+                : profile?.role === 'admin'
+                ? 'Администратор'
+                : profile?.role}
+              {profile?.company && ` · ${profile.company}`}
+            </p>
+            <p className="text-sm text-muted mt-0.5">{user.email}</p>
+          </div>
+          <div className="flex gap-2">
+            {!editing && (
+              <Button variant="outline" size="sm" onClick={startEdit}>
                 Редактировать
               </Button>
-            </div>
-            <div className="space-y-2 text-sm sm:text-base text-text">
-              <p>
-                <span className="text-muted">Имя: </span>
-                <span className="font-medium text-dark">{profile?.name || '—'}</span>
-              </p>
-              <p className="break-all">
-                <span className="text-muted">Email: </span>
-                <span className="font-medium text-dark">{user.email}</span>
-              </p>
-              <p>
-                <span className="text-muted">Роль: </span>
-                <span className="font-medium text-dark">
-                  {profile?.role === 'admin'
-                    ? 'Администратор'
-                    : profile?.role === 'supplier'
-                    ? 'Поставщик сырья'
-                    : 'Покупатель'}
-                </span>
-              </p>
-              <p>
-                <span className="text-muted">Компания: </span>
-                <span className="font-medium text-dark">{profile?.company || '—'}</span>
-              </p>
-            </div>
-            {profile?.role !== 'admin' && (
-              <p className="text-xs text-muted mt-4">
-                Email и роль изменить нельзя. Если нужно — создайте новый аккаунт.
-              </p>
             )}
-          </>
-        ) : (
-          <>
-            <h2 className="text-xl font-bold text-dark tracking-tight mb-5">
-              Редактирование профиля
-            </h2>
+            <Button variant="outline" size="sm" onClick={handleSignOut}>
+              Выйти
+            </Button>
+          </div>
+        </div>
 
-            {saveError && (
-              <div className="bg-red-50 text-red-700 text-sm rounded-btn px-4 py-3 mb-5">
-                {saveError}
-              </div>
-            )}
-
-            <form onSubmit={handleSaveProfile} className="space-y-4">
-              <Input
-                label="Имя"
-                type="text"
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                required
-              />
-              <Input
-                label="Компания"
-                type="text"
-                placeholder='ООО "Пример"'
-                value={form.company}
-                onChange={(e) => setForm({ ...form, company: e.target.value })}
-              />
-
-              <div className="flex flex-col sm:flex-row gap-2">
-                <Button type="submit" disabled={saving} className="w-full sm:w-auto">
-                  {saving ? 'Сохраняем...' : 'Сохранить'}
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={cancelEditing}
-                  disabled={saving}
-                  className="w-full sm:w-auto"
-                >
-                  Отмена
-                </Button>
-              </div>
-            </form>
-          </>
+        {editing && (
+          <div className="mt-6 space-y-3 border-t border-line pt-5">
+            <Input
+              label="Имя"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+            />
+            <Input
+              label="Компания"
+              value={form.company}
+              onChange={(e) => setForm({ ...form, company: e.target.value })}
+            />
+            {saveError && <p className="text-sm text-red-600">{saveError}</p>}
+            <div className="flex gap-2">
+              <Button size="sm" onClick={handleSaveProfile} disabled={saving}>
+                {saving ? 'Сохраняем...' : 'Сохранить'}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setEditing(false)}
+              >
+                Отмена
+              </Button>
+            </div>
+          </div>
         )}
       </Card>
 
       {/* ---------- Мои объявления ---------- */}
-      <Card hover={false} className="mb-6">
+      <Card hover={false}>
         <div className="flex justify-between items-center mb-4 gap-3">
           <h2 className="text-lg sm:text-xl font-bold text-dark tracking-tight">
             Мои объявления{' '}
-            {totalListings > 0 && (
-              <span className="text-muted font-medium">({totalListings})</span>
+            {(myRaw.length + myProducts.length) > 0 && (
+              <span className="text-muted font-medium">
+                ({myRaw.length + myProducts.length})
+              </span>
             )}
           </h2>
           <Link to="/add">
-            <Button size="sm">Добавить</Button>
+            <Button size="sm">+ Добавить</Button>
           </Link>
         </div>
 
         {listingsLoading ? (
-          <p className="text-muted text-sm">Загрузка объявлений...</p>
-        ) : totalListings === 0 ? (
-          <p className="text-text">
-            Пока объявлений нет. Добавьте первое — и оно появится в каталоге.
+          <p className="text-muted text-sm">Загрузка...</p>
+        ) : myRaw.length === 0 && myProducts.length === 0 ? (
+          <p className="text-sm text-muted">
+            Пока нет объявлений.{' '}
+            <Link to="/add" className="text-sage hover:underline">
+              Создать первое
+            </Link>
           </p>
         ) : (
           <div className="space-y-3">
             {myRaw.map((item) => (
               <div
                 key={item.id}
-                className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-btn border border-line hover:border-sage transition-all"
+                className="flex flex-col sm:flex-row sm:items-center gap-3 rounded-btn border border-line p-4"
               >
                 <Link to={`/product/${item.id}`} className="flex-1 min-w-0">
                   <Badge variant="sage">{RAW_MATERIAL_TYPES[item.type]}</Badge>
                   <p className="font-semibold text-dark mt-2 truncate">{item.title}</p>
                 </Link>
-
                 <div className="flex items-center justify-between gap-3 sm:justify-end">
                   <span className="font-bold text-dark whitespace-nowrap">
                     {formatPricePer(item.price_per_ton, 'т')}
@@ -338,13 +313,12 @@ export const ProfilePage = () => {
             {myProducts.map((item) => (
               <div
                 key={item.id}
-                className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-btn border border-line hover:border-sage transition-all"
+                className="flex flex-col sm:flex-row sm:items-center gap-3 rounded-btn border border-line p-4"
               >
                 <Link to={`/product/${item.id}`} className="flex-1 min-w-0">
                   <Badge variant="olive">{PRODUCT_CATEGORIES[item.category]}</Badge>
                   <p className="font-semibold text-dark mt-2 truncate">{item.title}</p>
                 </Link>
-
                 <div className="flex items-center justify-between gap-3 sm:justify-end">
                   <span className="font-bold text-dark whitespace-nowrap">
                     {formatPrice(item.price)} / {item.unit}
@@ -372,6 +346,196 @@ export const ProfilePage = () => {
           </div>
         )}
       </Card>
+
+      {/* ---------- Входящие заявки на сделки (US-P-05, US-P-06, US-P-07) ---------- */}
+      <Card hover={false}>
+        <div className="flex items-center gap-2 mb-4">
+          <Handshake className="w-5 h-5 text-sage" strokeWidth={2.2} />
+          <h2 className="text-lg sm:text-xl font-bold text-dark tracking-tight">
+            Входящие заявки{' '}
+            {incomingDeals.filter((d) => d.status === 'pending').length > 0 && (
+              <span className="text-muted font-medium">
+                ({incomingDeals.filter((d) => d.status === 'pending').length})
+              </span>
+            )}
+          </h2>
+        </div>
+
+        {incomingDeals.length === 0 ? (
+          <p className="text-sm text-muted">
+            Пока нет входящих заявок. Когда покупатель оставит заявку на ваше
+            объявление — она появится здесь.
+          </p>
+        ) : (
+          <div className="space-y-3">
+            {incomingDeals.map((deal) => (
+              <div
+                key={deal.id}
+                className="rounded-btn border border-line p-4 hover:border-sage transition-all"
+              >
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <Badge
+                        variant={
+                          deal.status === 'pending'
+                            ? 'sage'
+                            : deal.status === 'accepted'
+                            ? 'olive'
+                            : 'muted'
+                        }
+                      >
+                        {deal.status === 'pending'
+                          ? 'Ожидает'
+                          : deal.status === 'accepted'
+                          ? 'Принята'
+                          : deal.status === 'rejected'
+                          ? 'Отклонена'
+                          : deal.status}
+                      </Badge>
+                      <Badge variant="muted">
+                        {deal.itemKind === 'raw' ? 'Сырьё' : 'Продукция'}
+                      </Badge>
+                    </div>
+                    <p className="font-semibold text-dark truncate">
+                      {deal.itemTitle}
+                    </p>
+                    <p className="text-sm text-text mt-1">
+                      Покупатель: <span className="font-medium">{deal.buyerName}</span>
+                      {deal.buyerEmail && (
+                        <span className="text-muted"> · {deal.buyerEmail}</span>
+                      )}
+                    </p>
+                    <p className="text-sm text-muted mt-0.5">
+                      Объём: {deal.volume} {deal.itemKind === 'raw' ? 'т' : 'шт'} ·{' '}
+                      {formatPrice(deal.totalPrice)} · {formatDate(deal.createdAt)}
+                    </p>
+                    {deal.message && (
+                      <p className="text-sm text-text mt-2 bg-cream rounded-btn px-3 py-2">
+                        «{deal.message}»
+                      </p>
+                    )}
+                  </div>
+
+                  {deal.status === 'pending' && (
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Button
+                        size="sm"
+                        onClick={() => handleDealAction(deal.id, 'accepted')}
+                        disabled={dealActionId === deal.id}
+                      >
+                        <Check className="w-4 h-4 mr-1" />
+                        Принять
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleDealAction(deal.id, 'rejected')}
+                        disabled={dealActionId === deal.id}
+                      >
+                        <X className="w-4 h-4 mr-1" />
+                        Отклонить
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
+      {/* ---------- История продаж (US-P-08) ---------- */}
+      <Card hover={false}>
+        <h2 className="text-lg sm:text-xl font-bold text-dark tracking-tight mb-4">
+          История продаж{' '}
+          {salesHistory.length > 0 && (
+            <span className="text-muted font-medium">({salesHistory.length})</span>
+          )}
+        </h2>
+
+        {salesHistory.length === 0 ? (
+          <p className="text-sm text-muted">
+            Принятые и завершённые сделки появятся здесь. Это поможет отслеживать
+            активность и экономику.
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-line text-left text-muted">
+                  <th className="pb-2 pr-3 font-medium">Товар</th>
+                  <th className="pb-2 pr-3 font-medium">Покупатель</th>
+                  <th className="pb-2 pr-3 font-medium">Объём</th>
+                  <th className="pb-2 pr-3 font-medium">Сумма</th>
+                  <th className="pb-2 font-medium">Дата</th>
+                </tr>
+              </thead>
+              <tbody>
+                {salesHistory.map((deal) => (
+                  <tr key={deal.id} className="border-b border-line/60">
+                    <td className="py-2.5 pr-3 font-medium text-dark">
+                      {deal.itemTitle}
+                    </td>
+                    <td className="py-2.5 pr-3 text-text">{deal.buyerName}</td>
+                    <td className="py-2.5 pr-3 text-text">
+                      {deal.volume} {deal.itemKind === 'raw' ? 'т' : 'шт'}
+                    </td>
+                    <td className="py-2.5 pr-3 font-semibold text-dark">
+                      {formatPrice(deal.totalPrice)}
+                    </td>
+                    <td className="py-2.5 text-muted">
+                      {formatDate(deal.createdAt)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+
+      {/* ---------- Исходящие заявки покупателя ---------- */}
+      {outgoingDeals.length > 0 && (
+        <Card hover={false}>
+          <h2 className="text-lg sm:text-xl font-bold text-dark tracking-tight mb-4">
+            Мои исходящие заявки ({outgoingDeals.length})
+          </h2>
+          <div className="space-y-3">
+            {outgoingDeals.map((deal) => (
+              <div
+                key={deal.id}
+                className="rounded-btn border border-line p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2"
+              >
+                <div>
+                  <p className="font-semibold text-dark">{deal.itemTitle}</p>
+                  <p className="text-sm text-muted">
+                    {deal.volume} {deal.itemKind === 'raw' ? 'т' : 'шт'} ·{' '}
+                    {formatPrice(deal.totalPrice)} · {formatDate(deal.createdAt)}
+                  </p>
+                </div>
+                <Badge
+                  variant={
+                    deal.status === 'pending'
+                      ? 'sage'
+                      : deal.status === 'accepted'
+                      ? 'olive'
+                      : 'muted'
+                  }
+                >
+                  {deal.status === 'pending'
+                    ? 'Ожидает ответа'
+                    : deal.status === 'accepted'
+                    ? 'Принята'
+                    : deal.status === 'rejected'
+                    ? 'Отклонена'
+                    : deal.status}
+                </Badge>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       {/* ---------- Мои заявки на переработку ---------- */}
       <Card hover={false}>
@@ -401,9 +565,7 @@ export const ProfilePage = () => {
               они вернутся в производство или превратятся в компост.
             </p>
             <Link to="/recycling">
-              <Button variant="outline" size="sm">
-                Оставить заявку
-              </Button>
+              <Button size="sm">Оставить заявку</Button>
             </Link>
           </div>
         ) : (

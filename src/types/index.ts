@@ -80,3 +80,46 @@ export interface RecyclingRequest {
   status: RecyclingStatus;
   createdAt: string;
 }
+
+/* ---------- СДЕЛКИ / ЗАЯВКИ ---------- */
+
+export type DealStatus =
+  | 'pending'    // ожидает ответа поставщика
+  | 'accepted'   // поставщик подтвердил
+  | 'rejected'   // поставщик отклонил
+  | 'completed'  // сделка завершена
+  | 'cancelled'; // отменена покупателем
+
+export type DealItemKind = 'raw' | 'product';
+
+export interface Deal {
+  id: string;
+  itemKind: DealItemKind;
+  itemId: string;
+  itemTitle: string;
+  buyerId: string;
+  buyerName: string;
+  buyerEmail?: string | null;
+  sellerId: string;
+  sellerName: string;
+  volume: number;          // тонн для сырья, штук для продукции
+  pricePerUnit: number;    // цена за тонну / за единицу
+  totalPrice: number;
+  message?: string | null;
+  status: DealStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/* ---------- ОТЗЫВЫ И РЕЙТИНГИ ---------- */
+
+export interface Review {
+  id: string;
+  itemKind: DealItemKind;
+  itemId: string;
+  authorId: string;
+  authorName: string;
+  rating: number;          // 1–5
+  text: string;
+  createdAt: string;
+}
